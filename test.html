@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayurveda App - Interactive ER Diagram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: auto;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #2c3e50;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .diagram-container {
+            position: relative;
+            overflow: auto;
+            border: 2px solid #e0e6ed;
+            border-radius: 15px;
+            background: #f8fafc;
+            min-height: 800px;
+            padding: 40px;
+        }
+
+        .entity {
+            position: absolute;
+            min-width: 280px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .entity:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            z-index: 100;
+        }
+
+        .entity-header {
+            padding: 15px 20px;
+            border-radius: 15px 15px 0 0;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .entity-header::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .entity-body {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .attribute {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 8px;
+            background: rgba(248, 250, 252, 0.8);
+            border-left: 4px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .attribute:hover {
+            background: rgba(233, 245, 255, 0.9);
+            transform: translateX(5px);
+        }
+
+        .attribute-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-right: 8px;
+        }
+
+        .attribute-type {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .pk {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .fk {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
+
+        .enum {
+            border-left-color: #9b59b6;
+            background: rgba(155, 89, 182, 0.1);
+        }
+
+        /* Entity Colors */
+        .user { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .vaidya { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .clinic { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .challenge { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .transaction { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .avatar { background: linear-gradient(135deg, #fa709a, #fee140); }
+        .consultation { background: linear-gradient(135deg, #a8edea, #fed6e3); }
+        .product { background: linear-gradient(135deg, #ffecd2, #fcb69f); }
+        .subscription { background: linear-gradient(135deg, #667eea, #764ba2); }
+
+        /* Positioning */
+        .entity-user { top: 50px; left: 50px; }
+        .entity-vaidya { top: 50px; left: 400px; }
+        .entity-clinic { top: 50px; left: 750px; }
+        .entity-challenge { top: 350px; left: 50px; }
+        .entity-transaction { top: 350px; left: 400px; }
+        .entity-avatar { top: 350px; left: 750px; }
+        .entity-consultation { top: 650px; left: 50px; }
+        .entity-product { top: 650px; left: 400px; }
+        .entity-subscription { top: 650px; left: 750px; }
+
+        /* Connection Lines */
+        .connection {
+            position: absolute;
+            z-index: 1;
+        }
+
+        .connection-line {
+            stroke: #3498db;
+            stroke-width: 3;
+            stroke-dasharray: 5,5;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .connection-line:hover {
+            stroke-width: 5;
+            opacity: 1;
+        }
+
+        .relationship-label {
+            position: absolute;
+            background: rgba(52, 152, 219, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn {
+            display: block;
+            width: 100%;
+            padding: 8px 16px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 1200px) {
+            .diagram-container {
+                overflow-x: scroll;
+                min-width: 1100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🌿 Ayurveda App Database</h1>
+            <p class="subtitle">Interactive Entity Relationship Diagram</p>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Primary Key</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f39c12;"></div>
+                    <span>Foreign Key</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9b59b6;"></div>
+                    <span>Enum</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span>Relationship</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="diagram-container">
+            <!-- User Entity -->
+            <div class="entity entity-user">
+                <div class="entity-header user">👤 User</div>
+                <div class="entity-body">
+                    <div class="attribute pk">
+                        <span class="attribute-name">user_id</span>
+                        <span class="attribute-type">INT PK</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">name</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">email</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">password_hash</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">phone_number</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute enum">
+                        <span class="attribute-name">role</span>
+                        <span class="attribute-type">ENUM</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">date_of_birth</span>
+                        <span class="attribute-type">DATE</span>
+                    </div>
+                    <div class="attribute enum">
+                        <span class="attribute-name">gender</span>
+                        <span class="attribute-type">ENUM</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">prakriti_type</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">oxygen_points</span>
+                        <span class="attribute-type">INT</span>
+                    </div>
+                    <div class="attribute fk">
+                        <span class="attribute-name">invited_by</span>
+                        <span class="attribute-type">INT FK</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vaidya Entity -->
+            <div class="entity entity-vaidya">
+                <div class="entity-header vaidya">🩺 Vaidya</div>
+                <div class="entity-body">
+                    <div class="attribute pk">
+                        <span class="attribute-name">vaidya_id</span>
+                        <span class="attribute-type">INT PK</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">specialization</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute fk">
+                        <span class="attribute-name">clinic_id</span>
+                        <span class="attribute-type">INT FK</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">experience_years</span>
+                        <span class="attribute-type">INT</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">consultation_fee</span>
+                        <span class="attribute-type">DECIMAL</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">ratings</span>
+                        <span class="attribute-type">DECIMAL</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">total_consultations</span>
+                        <span class="attribute-type">INT</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clinic Entity -->
+            <div class="entity entity-clinic">
+                <div class="entity-header clinic">🏥 Clinic</div>
+                <div class="entity-body">
+                    <div class="attribute pk">
+                        <span class="attribute-name">clinic_id</span>
+                        <span class="attribute-type">INT PK</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">name</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">address</span>
+                        <span class="attribute-type">TEXT</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">region</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">verified</span>
+                        <span class="attribute-type">BOOLEAN</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">trust_score</span>
+                        <span class="attribute-type">DECIMAL</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">rating</span>
+                        <span class="attribute-type">DECIMAL</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Challenge Entity -->
+            <div class="entity entity-challenge">
+                <div class="entity-header challenge">🎯 Daily Challenge</div>
+                <div class="entity-body">
+                    <div class="attribute pk">
+                        <span class="attribute-name">challenge_id</span>
+                        <span class="attribute-type">INT PK</span>
+                    </div>
+                    <div class="attribute fk">
+                        <span class="attribute-name">user_id</span>
+                        <span class="attribute-type">INT FK</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">challenge_date</span>
+                        <span class="attribute-type">DATE</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">activity</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">points_rewarded</span>
+                        <span class="attribute-type">INT</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">completed</span>
+                        <span class="attribute-type">BOOLEAN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Oxygen Points Transaction Entity -->
+            <div class="entity entity-transaction">
+                <div class="entity-header transaction">💰 Oxygen Points</div>
+                <div class="entity-body">
+                    <div class="attribute pk">
+                        <span class="attribute-name">transaction_id</span>
+                        <span class="attribute-type">INT PK</span>
+                    </div>
+                    <div class="attribute fk">
+                        <span class="attribute-name">user_id</span>
+                        <span class="attribute-type">INT FK</span>
+                    </div>
+                    <div class="attribute enum">
+                        <span class="attribute-name">source</span>
+                        <span class="attribute-type">ENUM</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">points</span>
+                        <span class="attribute-type">INT</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">timestamp</span>
+                        <span class="attribute-type">TIMESTAMP</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">notes</span>
+                        <span class="attribute-type">TEXT</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plant Avatar Entity -->
+            <div class="entity entity-avatar">
+                <div class="entity-header avatar">🌱 Plant Avatar</div>
+                <div class="entity-body">
+                    <div class="attribute pk">
+                        <span class="attribute-name">plant_id</span>
+                        <span class="attribute-type">INT PK</span>
+                    </div>
+                    <div class="attribute fk">
+                        <span class="attribute-name">user_id</span>
+                        <span class="attribute-type">INT FK</span>
+                    </div>
+                    <div class="attribute enum">
+                        <span class="attribute-name">plant_type</span>
+                        <span class="attribute-type">ENUM</span>
+                    </div>
+                    <div class="attribute enum">
+                        <span class="attribute-name">growth_stage</span>
+                        <span class="attribute-type">ENUM</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">unlocked_at</span>
+                        <span class="attribute-type">TIMESTAMP</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">is_rare</span>
+                        <span class="attribute-type">BOOLEAN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consultation Entity -->
+            <div class="entity entity-consultation">
+                <div class="entity-header consultation">💬 Consultation</div>
+                <div class="entity-body">
+                    <div class="attribute pk">
+                        <span class="attribute-name">consultation_id</span>
+                        <span class="attribute-type">INT PK</span>
+                    </div>
+                    <div class="attribute fk">
+                        <span class="attribute-name">user_id</span>
+                        <span class="attribute-type">INT FK</span>
+                    </div>
+                    <div class="attribute fk">
+                        <span class="attribute-name">vaidya_id</span>
+                        <span class="attribute-type">INT FK</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">scheduled_at</span>
+                        <span class="attribute-type">TIMESTAMP</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">completed_at</span>
+                        <span class="attribute-type">TIMESTAMP</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">consultation_notes</span>
+                        <span class="attribute-type">TEXT</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">rating</span>
+                        <span class="attribute-type">INT</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Entity -->
+            <div class="entity entity-product">
+                <div class="entity-header product">💊 Product</div>
+                <div class="entity-body">
+                    <div class="attribute pk">
+                        <span class="attribute-name">product_id</span>
+                        <span class="attribute-type">INT PK</span>
+                    </div>
+                    <div class="attribute fk">
+                        <span class="attribute-name">vaidya_id</span>
+                        <span class="attribute-type">INT FK</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">name</span>
+                        <span class="attribute-type">VARCHAR</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">description</span>
+                        <span class="attribute-type">TEXT</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">price</span>
+                        <span class="attribute-type">DECIMAL</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">stock_quantity</span>
+                        <span class="attribute-type">INT</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">approved_by_admin</span>
+                        <span class="attribute-type">BOOLEAN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscription Entity -->
+            <div class="entity entity-subscription">
+                <div class="entity-header subscription">💳 Subscription</div>
+                <div class="entity-body">
+                    <div class="attribute pk">
+                        <span class="attribute-name">subscription_id</span>
+                        <span class="attribute-type">INT PK</span>
+                    </div>
+                    <div class="attribute fk">
+                        <span class="attribute-name">user_id</span>
+                        <span class="attribute-type">INT FK</span>
+                    </div>
+                    <div class="attribute enum">
+                        <span class="attribute-name">plan</span>
+                        <span class="attribute-type">ENUM</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">start_date</span>
+                        <span class="attribute-type">DATE</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">end_date</span>
+                        <span class="attribute-type">DATE</span>
+                    </div>
+                    <div class="attribute">
+                        <span class="attribute-name">is_active</span>
+                        <span class="attribute-type">BOOLEAN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SVG for connection lines -->
+            <svg class="connection" width="100%" height="100%" style="position: absolute; top: 0; left: 0; pointer-events: none;">
+                <!-- User to Challenge -->
+                <line class="connection-line" x1="330" y1="200" x2="330" y2="350" />
+                <text x="340" y="280" class="relationship-label">1:M</text>
+                
+                <!-- User to Transaction -->
+                <line class="connection-line" x1="330" y1="250" x2="480" y2="350" />
+                <text x="380" y="300" class="relationship-label">1:M</text>
+                
+                <!-- User to Avatar -->
+                <line class="connection-line" x1="330" y1="300" x2="750" y2="400" />
+                <text x="540" y="350" class="relationship-label">1:M</text>
+                
+                <!-- User to Consultation -->
+                <line class="connection-line" x1="200" y1="400" x2="200" y2="650" />
+                <text x="210" y="525" class="relationship-label">1:M</text>
+                
+                <!-- User to Subscription -->
+                <line class="connection-line" x1="330" y1="400" x2="830" y2="650" />
+                <text x="580" y="525" class="relationship-label">1:1</text>
+                
+                <!-- User to Vaidya (IS-A) -->
+                <line class="connection-line" x1="330" y1="150" x2="400" y2="150" stroke="#e74c3c" stroke-dasharray="none" />
+                <text x="350" y="140" class="relationship-label" style="background: #e74c3c;">IS-A</text>
+                
+                <!-- Vaidya to Clinic -->
+                <line class="connection-line" x1="680" y1="200" x2="750" y2="200" />
+                <text x="700" y="190" class="relationship-label">M:1</text>
+                
+                <!-- Vaidya to Consultation -->
+                <line class="connection-line" x1="480" y1="400" x2="280" y2="650" />
+                <text x="350" y="525" class="relationship-label">1:M</text>
+                
+                <!-- Vaidya to Product -->
+                <line class="connection-line" x1="480" y1="400" x2="480" y2="650" />
+                <text x="490" y="525" class="relationship-label">1:M</text>
+            </svg>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" onclick="highlightPrimaryKeys()">Highlight PKs</button>
+            <button class="control-btn" onclick="highlightForeignKeys()">Highlight FKs</button>
+            <button class="control-btn" onclick="highlightRelationships()">Show Relations</button>
+            <button class="control-btn" onclick="resetHighlights()">Reset View</button>
+        </div>
+    </div>
+
+    <script>
+        function highlightPrimaryKeys() {
+            resetHighlights();
+            const pkElements = document.querySelectorAll('.pk');
+            pkElements.forEach(el => {
+                el.style.transform = 'scale(1.05)';
+                el.style.background = 'rgba(231, 76, 60, 0.3)';
+                el.style.boxShadow = '0 0 15px rgba(231, 76, 60, 0.5)';
+            });
+        }
+
+        function highlightForeignKeys() {
+            resetHighlights();
+            const fkElements = document.querySelectorAll('.fk');
+            fkElements.forEach(el => {
+                el.style.transform = 'scale(1.05)';
+                el.style.background = 'rgba(243, 156, 18, 0.3)';
+                el.style.boxShadow = '0 0 15px rgba(243, 156, 18, 0.5)';
+            });
+        }
+
+        function highlightRelationships() {
+            resetHighlights();
+            const lines = document.querySelectorAll('.connection-line');
+            const labels = document.querySelectorAll('.relationship-label');
+            
+            lines.forEach(line => {
+                line.style.strokeWidth = '6';
+                line.style.opacity = '1';
+                line.style.stroke = '#e74c3c';
+            });
+            
+            labels.forEach(label => {
+                label.style.background = 'rgba(231, 76, 60, 0.9)';
+                label.style.transform = 'scale(1.2)';
+            });
+        }
+
+        function resetHighlights() {
+            const allElements = document.querySelectorAll('.pk, .fk, .connection-line, .relationship-label');
+            allElements.forEach(el => {
+                el.style.transform = '';
+                el.style.background = '';
+                el.style.boxShadow = '';
+                el.style.strokeWidth = '';
+                el.style.opacity = '';
+                el.style.stroke = '';
+            });
+            
+            // Reset specific styles
+            document.querySelectorAll('.pk').forEach(el => {
+                el.style.background = 'rgba(231, 76, 60, 0.1)';
+                el.style.borderLeftColor = '#e74c3c';
+            });
+            
+            document.querySelectorAll('.fk').forEach(el => {
+                el.style.background = 'rgba(243, 156, 18, 0.1)';
+                el.style.borderLeftColor = '#f39c12';
+            });
+            
+            document.querySelectorAll('.connection-line').forEach(el => {
+                el.style.stroke = '#3498db';
+                el.style.strokeWidth = '3';
+                el.style.opacity = '0.7';
+            });
+            
+            document.querySelectorAll('.relationship-label').forEach(el => {
+                el.style.background = 'rgba(52, 152, 219, 0.9)';
+            });
+        }
+
+        // Add click interactions for entities
+        document.querySelectorAll('.entity').forEach(entity => {
+            entity.addEventListener('click', function() {
+                // Remove previous selections
+                document.querySelectorAll('.entity').forEach(e => e.classList.remove('selected'));
+                
+                // Add selection to clicked entity
+                this.classList.add('selected');
+                
+                // Add some visual feedback
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 200);
+            });
+        });
+
+        // Add CSS for selected state
+        const style = document.createElement('style');
+        style.textContent = `
+            .entity.selected {
+                box-shadow: 0 0 30px rgba(52, 152, 219, 0.8) !important;
+                border: 3px solid rgba(52, 152, 219, 0.8) !important;
+                z-index: 1000 !important;
+            }
+            
+            .entity.selected .entity-header {
+                background: linear-gradient(135deg, #3498db, #2980b9) !important;
+                animation: pulse 2s infinite;
+            }
+            
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+                100% { transform: scale(1); }
+            }
+            
+            .highlight-animation {
+                animation: highlight 1s ease-in-out;
+            }
+            
+            @keyframes highlight {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); box-shadow: 0 0 25px rgba(52, 152, 219, 0.8); }
+                100% { transform: scale(1); }
+            }
+            
+            .connection-line.active {
+                animation: pulse-line 2s infinite;
+            }
+            
+            @keyframes pulse-line {
+                0% { stroke-opacity: 0.7; }
+                50% { stroke-opacity: 1; }
+                100% { stroke-opacity: 0.7; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Add hover effects for better UX
+        document.querySelectorAll('.entity').forEach(entity => {
+            entity.addEventListener('mouseenter', function() {
+                if (!this.classList.contains('selected')) {
+                    this.style.transform = 'translateY(-3px) scale(1.01)';
+                }
+            });
+            
+            entity.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('selected')) {
+                    this.style.transform = '';
+                }
+            });
+        });
+
+        // Add double-click to show entity details
+        document.querySelectorAll('.entity').forEach(entity => {
+            entity.addEventListener('dblclick', function() {
+                const entityName = this.querySelector('.entity-header').textContent;
+                const attributes = Array.from(this.querySelectorAll('.attribute')).map(attr => {
+                    const name = attr.querySelector('.attribute-name').textContent;
+                    const type = attr.querySelector('.attribute-type').textContent;
+                    return `${name} (${type})`;
+                }).join('\n');
+                
+                alert(`Entity: ${entityName}\n\nAttributes:\n${attributes}`);
+            });
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case '1':
+                    highlightPrimaryKeys();
+                    break;
+                case '2':
+                    highlightForeignKeys();
+                    break;
+                case '3':
+                    highlightRelationships();
+                    break;
+                case 'r':
+                case 'R':
+                    resetHighlights();
+                    break;
+                case 'Escape':
+                    resetHighlights();
+                    document.querySelectorAll('.entity').forEach(e => e.classList.remove('selected'));
+                    break;
+            }
+        });
+
+        // Add tooltip functionality
+        function createTooltip() {
+            const tooltip = document.createElement('div');
+            tooltip.id = 'tooltip';
+            tooltip.style.cssText = `
+                position: absolute;
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                pointer-events: none;
+                z-index: 10000;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                max-width: 200px;
+                white-space: nowrap;
+            `;
+            document.body.appendChild(tooltip);
+            return tooltip;
+        }
+
+        const tooltip = createTooltip();
+
+        // Add tooltips to attributes
+        document.querySelectorAll('.attribute').forEach(attr => {
+            attr.addEventListener('mouseenter', function(e) {
+                const name = this.querySelector('.attribute-name').textContent;
+                const type = this.querySelector('.attribute-type').textContent;
+                let description = '';
+                
+                if (this.classList.contains('pk')) {
+                    description = 'Primary Key - Unique identifier';
+                } else if (this.classList.contains('fk')) {
+                    description = 'Foreign Key - References another table';
+                } else if (this.classList.contains('enum')) {
+                    description = 'Enumeration - Predefined set of values';
+                } else {
+                    description = 'Regular attribute';
+                }
+                
+                tooltip.innerHTML = `<strong>${name}</strong><br>${type}<br><em>${description}</em>`;
+                tooltip.style.opacity = '1';
+            });
+            
+            attr.addEventListener('mousemove', function(e) {
+                tooltip.style.left = (e.pageX + 10) + 'px';
+                tooltip.style.top = (e.pageY - 10) + 'px';
+            });
+            
+            attr.addEventListener('mouseleave', function() {
+                tooltip.style.opacity = '0';
+            });
+        });
+
+        // Add search functionality
+        function createSearchBox() {
+            const searchContainer = document.createElement('div');
+            searchContainer.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: rgba(255, 255, 255, 0.95);
+                padding: 15px;
+                border-radius: 15px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+                backdrop-filter: blur(10px);
+                width: 250px;
+            `;
+            
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = 'Search entities or attributes...';
+            searchInput.style.cssText = `
+                width: 100%;
+                padding: 8px 12px;
+                border: 2px solid #e0e6ed;
+                border-radius: 8px;
+                font-size: 14px;
+                outline: none;
+                transition: border-color 0.3s ease;
+            `;
+            
+            searchInput.addEventListener('focus', function() {
+                this.style.borderColor = '#3498db';
+            });
+            
+            searchInput.addEventListener('blur', function() {
+                this.style.borderColor = '#e0e6ed';
+            });
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                resetHighlights();
+                document.querySelectorAll('.entity').forEach(e => e.classList.remove('selected'));
+                
+                if (searchTerm.length > 0) {
+                    let found = false;
+                    document.querySelectorAll('.entity').forEach(entity => {
+                        const entityText = entity.textContent.toLowerCase();
+                        if (entityText.includes(searchTerm)) {
+                            entity.classList.add('highlight-animation');
+                            entity.style.border = '3px solid #f39c12';
+                            found = true;
+                            
+                            setTimeout(() => {
+                                entity.classList.remove('highlight-animation');
+                            }, 1000);
+                        } else {
+                            entity.style.opacity = '0.5';
+                        }
+                    });
+                    
+                    if (!found) {
+                        // Flash all entities to indicate no results
+                        document.querySelectorAll('.entity').forEach(entity => {
+                            entity.style.opacity = '0.3';
+                        });
+                    }
+                } else {
+                    // Reset all entities
+                    document.querySelectorAll('.entity').forEach(entity => {
+                        entity.style.opacity = '1';
+                        entity.style.border = '';
+                    });
+                }
+            });
+            
+            const searchLabel = document.createElement('div');
+            searchLabel.textContent = '🔍 Search';
+            searchLabel.style.cssText = `
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: #2c3e50;
+            `;
+            
+            searchContainer.appendChild(searchLabel);
+            searchContainer.appendChild(searchInput);
+            document.body.appendChild(searchContainer);
+        }
+
+        createSearchBox();
+
+        // Add keyboard shortcut help
+        function showKeyboardHelp() {
+            const helpText = `
+Keyboard Shortcuts:
+• Press '1' - Highlight Primary Keys
+• Press '2' - Highlight Foreign Keys  
+• Press '3' - Show Relationships
+• Press 'R' - Reset View
+• Press 'Esc' - Clear Selection
+
+Mouse Interactions:
+• Click - Select Entity
+• Double Click - Show Details
+• Hover - Preview
+            `;
+            alert(helpText);
+        }
+
+        // Add help button
+        const helpBtn = document.createElement('button');
+        helpBtn.textContent = '❓ Help';
+        helpBtn.className = 'control-btn';
+        helpBtn.onclick = showKeyboardHelp;
+        document.querySelector('.controls').appendChild(helpBtn);
+
+        console.log('🌿 Ayurveda App ER Diagram loaded successfully!');
+        console.log('Use keyboard shortcuts: 1 (PKs), 2 (FKs), 3 (Relations), R (Reset)');
+    </script>
+</body>
+</html>
